@@ -12,48 +12,47 @@ public class FichAccAleatorio3 {
     El método capturará y tratará todas las excepciones que puedan producirse.*/
 
     public static void main(String[] args) {
-
-        String fichero="C:\\dir1\\ejercicioAleatorio.data";
-        ej3(fichero);
-
+        actualizarPrecios("datos.txt");
     }
-    public static void ej3(String fichero){
-        try {
-            RandomAccessFile fich = new RandomAccessFile(fichero,"rw");
-            int referencia;
-            double precio;
-          /*  String elquebuscar;
-            String buscado = "casa";*/
 
-            do {
-                referencia= fich.readInt();
-                precio=fich.readDouble();
-                /* elquebuscar=fich.readUTF();*/
+    public static void actualizarPrecios(String nombreArchivo) {
+        try (RandomAccessFile archivo = new RandomAccessFile(nombreArchivo, "rw")) {
+            String linea;
+            long posicion = 0;
+            while ((linea = archivo.readLine()) != null) {
+                // Dividimos la línea en referencia y precio
+                String[] partes = linea.split(",");
+                int referencia = Integer.parseInt(partes[0]);
+                double precio = Double.parseDouble(partes[1]);
 
-                if (precio>100){
-
-                    precio=precio*0.5;
-                }
-               /* if (buscado.equalsIgnoreCase(elquebuscar)){
-                    fich.seek(fich.getFilePointer()-(buscado.length()*2));
-                }*/
-                else {
-                    precio=precio*1.5;
+                // Actualizamos el precio según las condiciones dadas
+                if (precio > 100) {
+                    precio *= 0.5; // Decrementar un 50% para precios superiores a 100 euros
+                } else {
+                    precio *= 1.5; // Incrementar un 50% para precios inferiores o iguales a 100 euros
                 }
 
-                fich.seek(fich.getFilePointer()-8);
-                fich.writeDouble(precio);
+                // Regresamos al inicio de la línea en el archivo
+                archivo.seek(posicion);
+                // Escribimos el precio actualizado
+                archivo.writeBytes(String.format("%d,%.2f%n", referencia, precio));
 
-            }while(fich.getFilePointer()<fich.length());
-            fich.close();
-            System.out.println("Precios cambiados correctamente");
-
+                // Movemos la posición al inicio de la siguiente línea
+                posicion = archivo.getFilePointer();
+            }
+            System.out.println("Precios actualizados correctamente en el archivo: " + nombreArchivo);
         } catch (FileNotFoundException e) {
-            System.err.println("Error: Archivo no encontrado.");
+            System.out.println("Archivo no encontrado: " + nombreArchivo);
+            e.printStackTrace();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("Error al leer o escribir en el archivo: " + nombreArchivo);
+            e.printStackTrace();
+        } catch (NumberFormatException e) {
+            System.out.println("Error: El archivo no tiene el formato esperado.");
+            e.printStackTrace();
         }
-
-
     }
+
+
 }
+
