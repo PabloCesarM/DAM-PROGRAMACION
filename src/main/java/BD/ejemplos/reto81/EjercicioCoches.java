@@ -36,11 +36,7 @@ Finalmente, se escribirá en pantalla la tabla actualizada
 
 
 
-        /*    "INSERT INTO SeguroCoche (Dni, Edad, Matricula, Seguro) " +
-                    "SELECT p.Dni, p.Edad, c.Matricula, " +
-                    "CASE WHEN p.Edad < 40 THEN c.Precio * 0.02 ELSE c.Precio * 0.01 END AS Seguro " +
-                    "FROM Propietarios p JOIN Coches c ON p.Dni = c.DniPropietario";
-        */
+       
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
