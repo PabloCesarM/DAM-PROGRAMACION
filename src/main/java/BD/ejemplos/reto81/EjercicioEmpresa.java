@@ -52,6 +52,8 @@ Nº Empleado Nombre Empleado Salario Nombre Departamento
 
 
 
+
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
