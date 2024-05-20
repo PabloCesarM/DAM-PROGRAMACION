@@ -1,5 +1,8 @@
 package BD.ejemplos.reto81;
 
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.*;
 
 public class EjercicioEmpresa {
@@ -13,52 +16,105 @@ Y si es una modificación, vendrá el código del empleado y el porcentaje que s
 Finalmente, sacar un informe en el que aparezca:
 Nº Empleado Nombre Empleado Salario Nombre Departamento
  */
-    public static void main(String[] args) {
+public static void main(String[] args) {
+    String url = "jdbc:mysql://localhost:3306/Empresa";
+    String user = "root";
+    String password = "admin";
 
-        final String instSQLSelect = "select * from personaspaises";
+    try (Connection conexion = DriverManager.getConnection(url, user, password);
+         FileInputStream fis = new FileInputStream("datos.dat");
+         DataInputStream dis = new DataInputStream(fis)) {
 
-        Connection miConexion = null;
-
-        try {
-            //creamos la conexion       //si no se pone "empresaProgramacion" luego habria que hacer un use para elegir la base de datos que queremos utilizar
-            miConexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/empresaProgramacion", "root", "admin");
-            //crear el Statement para ejecutar sentencias sql directas
-            Statement st = miConexion.createStatement();
-
-
-            // st.executeUpdate("CREATE TABLE Empleados (Id INT PRIMARY KEY, Nombre VARCHAR(15), " +
-            //        "Apellido VARCHAR(15), Edad TINYINT, NombrePais VARCHAR(15), Tamaño VARCHAR(15))");
-
-            // cuando se hace un select dentro de un insert no se tiene que poner el values
-      /*      st.executeUpdate("INSERT INTO PersonasPaises(id,nombre,apellido,edad,nombrepais,tamaño) SELECT Persona.Id, " +
-                    "Persona.Nombre, Persona.Apellido, Persona.Edad, Pais.Nombre, Pais.Tamaño FROM Persona JOIN Pais " +
-                    "ON Persona.Pais = Pais.Id");
-        */
-
-            //actualizar los datos de la tabla sumando 1 a la edad en las personas de chile
-            /*            st.executeUpdate("UPDATE PersonasPaises SET Edad = Edad + 1 WHERE NombrePais = 'Costa Rica'");
-             */
-            //mostar los datos de la tabla PersonasPaises
-            //se crea la query arriba
-            st.execute(instSQLSelect);
-            //se declara el resulset obtener el contenido
-            ResultSet rs = st.executeQuery(instSQLSelect);
-            //se utiliza el while para recorrer la tabla e ir imprimiendo los datos
-            while (rs.next()) {
-                System.out.println(rs.getInt("id") + "\t" + rs.getString("Nombre") + "\t" +
-                        rs.getString("apellido") + "\t" + rs.getInt("edad") + "\t" +
-                        rs.getString("NombrePais") + "\t" + rs.getString("tamaño"));
+        while (dis.available() > 0) {
+            char operation = dis.readChar();
+            switch (operation) {
+                case 'A':
+                    altaEmp(dis, conexion);
+                    break;
+                case 'B':
+                    bajaEmp(dis, conexion);
+                    break;
+                case 'M':
+                    modificarSalario(dis, conexion);
+                    break;
+                default:
+                    System.out.println("Unknown operation: " + operation);
             }
-
-
-
-
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
+        informe(conexion);
+    } catch (SQLException | IOException e) {
+        e.printStackTrace();
+    }
+}
 
+    //metodo para dar de alta un empleado
+    private static void altaEmp(DataInputStream dis, Connection connection) throws SQLException, IOException {
+        int emp_no = dis.readInt();
+        String apellido = dis.readUTF();
+        String oficio = dis.readUTF();
+        int dir = dis.readInt();
+        String fecha_alt = dis.readUTF();
+        float salario = dis.readFloat();
+        float comision = dis.readFloat();
+        int dept_no = dis.readInt();
 
+        String sqlInsert = "INSERT INTO empleados VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement pst = connection.prepareStatement(sqlInsert)) {
+            pst.setInt(1, emp_no);
+            pst.setString(2, apellido);
+            pst.setString(3, oficio);
+            pst.setInt(4, dir);
+            pst.setDate(5, Date.valueOf(fecha_alt));
+            pst.setFloat(6, salario);
+            pst.setFloat(7, comision);
+            pst.setInt(8, dept_no);
+            pst.executeUpdate();
+        }
+    }
+
+    //metodo para dar de baja un empleado
+    private static void bajaEmp(DataInputStream dis, Connection connection) throws SQLException, IOException {
+        int emp_no = dis.readInt();
+        final String sqlEliminar = "DELETE FROM empleados WHERE emp_no = ?";
+
+        try (PreparedStatement pst = connection.prepareStatement(sqlEliminar)) {
+            pst.setInt(1, emp_no);
+            pst.executeUpdate();
+        }
+    }
+
+    //metodo para modificar el salario
+    private static void modificarSalario(DataInputStream dis, Connection connection) throws SQLException, IOException {
+        int emp_no = dis.readInt();
+        float percentage = dis.readFloat();
+
+        String sqlUpdate = "UPDATE empleados SET salario = salario + salario * ? / 100 WHERE emp_no = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sqlUpdate)) {
+            pstmt.setFloat(1, percentage);
+            pstmt.setInt(2, emp_no);
+            pstmt.executeUpdate();
+        }
+    }
+
+    //metodo para sacar un informe con los datos del empleado
+    private static void informe(Connection connection) throws SQLException {
+        String sqlSel = "SELECT empleados.emp_no, empleados.apellido, empleados.salario, departamentos.dnombre " +
+                "FROM empleados " +
+                "JOIN departamentos ON empleados.dept_no = departamentos.dept_no";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sqlSel)) {
+
+            System.out.printf("%-10s %-15s %-10s %-20s%n", "Nº Empleado", "Nombre Empleado", "Salario", "Nombre Departamento");
+            while (rs.next()) {
+                int emp_no = rs.getInt("emp_no");
+                String apellido = rs.getString("apellido");
+                float salario = rs.getFloat("salario");
+                String dnombre = rs.getString("dnombre");
+
+                System.out.printf("%-10d %-15s %-10.2f %-20s%n", emp_no, apellido, salario, dnombre);
+            }
+        }
     }
 
 

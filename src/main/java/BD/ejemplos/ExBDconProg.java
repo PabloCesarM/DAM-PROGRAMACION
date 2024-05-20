@@ -103,11 +103,11 @@ public class ExBDconProg {
             stCrearArt.close();
 
             //insetar datos en ArtFab desde las otras dos tablas
-            Statement stInsertArt = conexion.createStatement();
-            stInsertArt.executeUpdate("INSERT INTO ArtFab(NombreArticulo,NombreFabricante,Precio) SELECT " +
-                    "articulos.nombre, fabricantes.Nombre, articulos.precio " +
-                    "FROM articulos JOIN fabricantes ON articulos.CLFAB = fabricantes.CLFAB");
-            stInsertArt.close();
+//            Statement stInsertArt = conexion.createStatement();
+//            stInsertArt.executeUpdate("INSERT INTO ArtFab(NombreArticulo,NombreFabricante,Precio) SELECT " +
+//                    "articulos.nombre, fabricantes.Nombre, articulos.precio " +
+//                    "FROM articulos JOIN fabricantes ON articulos.CLFAB = fabricantes.CLFAB");
+//            stInsertArt.close();
             //NO HE PODIDO AÑADIR EL IVA
 //            //insert para añadir el IVA
 //            Statement stInsertArtIVA = conexion.createStatement();
@@ -116,13 +116,44 @@ public class ExBDconProg {
 //                    "FROM articulos JOIN fabricantes ON articulos.CLFAB = fabricantes.CLFAB");
 //            stInsertArt.close();
 
+            //como se tendria que haber hecho
+
+            String join ="select articulos.nombre as art_nombre,fabricantes.nombre as fab_nombre , articulos.nombre from articulos join fabricantes ON articulos.CLFAB = fabricantes.CLFAB";
+            String insertUltimo= "insert into ArtFab (NombreArticulo,NombreFabricante,precio,IVA) values (?,?,?,?)";
+
+            Statement stjoin =conexion.createStatement();
+            ResultSet  rs = stjoin.executeQuery(join);
+       while (rs.next()){
+
+           String art_nombre=rs.getString(1);
+           String fab_nombre = rs.getString(2);
+           int precio = rs.getInt(3);
+           int IVA = (int) calcularIVA(precio);
+
+           PreparedStatement ps = conexion.prepareStatement(insertUltimo);
+            ps.setString(1,art_nombre);
+            ps.setString(2,fab_nombre);
+            ps.setInt(3,precio);
+            ps.setInt(4,IVA);
+            ps.executeUpdate();
+
+
+
+
+       }
+
+
+
+
+
+
 
             //recorrer la tabla artfab para mostrar su contenido
             Statement stImprimir = conexion.createStatement();
-            ResultSet rs = stImprimir.executeQuery("select * from artfab");
+              rs = stImprimir.executeQuery("select * from artfab");
             while (rs.next()) {
                 System.out.println(rs.getString("NombreArticulo") + " " + rs.getString("NombreFabricante") +
-                            " " + rs.getString("Precio") + " " + rs.getString("IVA"));
+                            " " + rs.getInt("Precio") + " " + rs.getDouble("IVA"));
             }
 
             rs.close();
