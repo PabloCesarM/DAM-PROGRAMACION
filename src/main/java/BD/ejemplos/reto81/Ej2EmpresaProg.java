@@ -41,7 +41,7 @@ de las tablas Empleados y Departamentos.
             }
 
 
-
+            //crear la conexion
             Connection miConexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/empresa_programacion", "root", "admin");
             Statement st = miConexion.createStatement();
 
